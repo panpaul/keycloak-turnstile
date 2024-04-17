@@ -15,7 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
-        <keycloak.version>23.0.6</keycloak.version>
+        <keycloak.version>24.0.3</keycloak.version>
     </properties>
 
     <repositories>
