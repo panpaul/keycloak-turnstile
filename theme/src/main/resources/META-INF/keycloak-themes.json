@@ -1,0 +1,6 @@
+{
+  "themes": [{
+    "name" : "turnstile-login-theme",
+    "types": [ "login" ]
+  }]
+}

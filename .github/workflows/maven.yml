@@ -16,15 +16,19 @@ jobs:
           java-version: '17'
           distribution: 'liberica'
           cache: maven
-      - name: Build with Maven
+      - name: Build Plugin
         run: mvn -B package --file pom.xml
+      - name: Build Theme
+        run: mvn -B package --file theme/pom.xml
       - name: Extract Version
         run: |
           echo "RELEASE_VERSION=v$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: target/*.jar
           body: Auto released by GitHub Actions
           prerelease: true
+          files: |
+            target/*.jar
+            theme/target/*.jar

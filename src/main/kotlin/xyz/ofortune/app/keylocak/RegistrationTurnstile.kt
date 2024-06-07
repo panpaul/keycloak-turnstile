@@ -1,8 +1,9 @@
-package xyz.ofortune.app.keylocak.authenticator
+package xyz.ofortune.app.keylocak
 
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.message.BasicNameValuePair
+import org.jboss.logging.Logger;
 import org.keycloak.Config
 import org.keycloak.authentication.FormAction
 import org.keycloak.authentication.FormActionFactory
@@ -17,19 +18,24 @@ import org.keycloak.models.utils.FormMessage
 import org.keycloak.provider.ConfiguredProvider
 import org.keycloak.provider.ProviderConfigProperty
 import org.keycloak.services.ServicesLogger
-import org.keycloak.services.messages.Messages
 import org.keycloak.services.validation.Validation
 import org.keycloak.util.JsonSerialization
+
 
 class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider {
     companion object {
         const val PROVIDER_ID = "registration-turnstile-action"
 
-        const val CF_TURNSTILE_RESPONSE = "g-recaptcha-response" // using compat mode
+        const val MSG_CAPTCHA_FAILED = "captchaFailed"
+        const val MSG_CAPTCHA_NOT_CONFIGURED = "captchaNotConfigured"
+
+        const val CF_TURNSTILE_RESPONSE = "cf-turnstile-response"
         const val TURNSTILE_REFERENCE_CATEGORY = "turnstile"
 
         const val SITE_KEY = "site.key"
         const val SITE_SECRET = "secret"
+        const val ACTION = "action"
+        const val DEFAULT_ACTION = "register"
 
         private val REQUIREMENT_CHOICES = arrayOf(
             AuthenticationExecutionModel.Requirement.REQUIRED,
@@ -48,11 +54,28 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
                 label = "Turnstile Secret"
                 helpText = "Cloudflare Turnstile Secret"
                 type = ProviderConfigProperty.STRING_TYPE
-            })
+            },
+            ProviderConfigProperty().apply {
+                name = ACTION
+                label = "Action"
+                helpText = "A value that can be used to differentiate widgets under the same Site Key in analytics. " +
+                        "Defaults to 'register'"
+                type = ProviderConfigProperty.STRING_TYPE
+            },
+        )
+
+        private var LOGGER: Logger = Logger.getLogger(RegistrationTurnstile::class.java)
     }
 
-    private fun validateTurnstile(context: ValidationContext, captcha: String, secret: String?): Boolean {
+    private fun validateTurnstile(
+        context: ValidationContext,
+        captcha: String,
+        config: Map<String?, String?>
+    ): Boolean {
         val httpClient = context.session.getProvider(HttpClientProvider::class.java).httpClient
+        val secret = config[SITE_SECRET]
+        val action = config[ACTION] ?: DEFAULT_ACTION
+
 
         val post = HttpPost("https://challenges.cloudflare.com/turnstile/v0/siteverify").apply {
             entity = UrlEncodedFormEntity(
@@ -68,9 +91,11 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
             httpClient.execute(post).use { response ->
                 val content = response.entity.content
                 val json = JsonSerialization.readValue(content, Map::class.java)
-                json["success"] == true
+                LOGGER.tracef("Turnstile response: %s", json)
+                json["success"] == true && json["action"] == action
             }
         } catch (e: Exception) {
+            // reusing recaptcha logger
             ServicesLogger.LOGGER.recaptchaFailed(e)
             false
         }
@@ -90,33 +115,37 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
     }
 
     override fun buildPage(context: FormContext, form: LoginFormsProvider) {
-        val captchaConfig = context.authenticatorConfig
-        if (captchaConfig == null || captchaConfig.config == null
-            || captchaConfig.config[SITE_KEY] == null
-            || captchaConfig.config[SITE_SECRET] == null
-        ) {
-            form.addError(FormMessage(null, Messages.RECAPTCHA_NOT_CONFIGURED))
+        val isConfigured = context.authenticatorConfig.config?.run {
+            listOf(SITE_KEY, SITE_SECRET).all { this[it] != null }
+        } ?: false
+
+        if (!isConfigured) {
+            form.addError(FormMessage(null, MSG_CAPTCHA_NOT_CONFIGURED))
             return
         }
 
+        val captchaConfig = context.authenticatorConfig
         val siteKey = captchaConfig.config[SITE_KEY]
-        // NOTICE: reuse recaptcha ftl to avoid modifying the theme
-        form.setAttribute("recaptchaRequired", true)
-        form.setAttribute("recaptchaSiteKey", siteKey)
-        form.addScript("https://challenges.cloudflare.com/turnstile/v0/api.js?compat=recaptcha")
+        val action = captchaConfig.config[ACTION] ?: DEFAULT_ACTION
+        val lang = context.session.context.resolveLocale(context.user).toLanguageTag()
+
+        form.setAttribute("captchaRequired", true)
+        form.setAttribute("captchaSiteKey", siteKey)
+        form.setAttribute("captchaAction", action)
+        form.setAttribute("captchaLanguage", lang)
+        form.addScript("https://challenges.cloudflare.com/turnstile/v0/api.js")
     }
 
     override fun validate(context: ValidationContext) {
         val formData = context.httpRequest.decodedFormParameters
         val captcha = formData.getFirst(CF_TURNSTILE_RESPONSE)
-        val secret = context.authenticatorConfig.config[SITE_SECRET]
 
         context.event.detail(Details.REGISTER_METHOD, "form")
 
-        if (Validation.isBlank(captcha) || !validateTurnstile(context, captcha, secret)) {
+        if (Validation.isBlank(captcha) || !validateTurnstile(context, captcha, context.authenticatorConfig.config)) {
             formData.remove(CF_TURNSTILE_RESPONSE)
             context.error(Errors.INVALID_REGISTRATION)
-            context.validationError(formData, listOf(FormMessage(null, Messages.RECAPTCHA_FAILED)))
+            context.validationError(formData, listOf(FormMessage(null, MSG_CAPTCHA_FAILED)))
             context.excludeOtherErrors()
         } else {
             context.success()
