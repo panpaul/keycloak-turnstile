@@ -1,29 +1,25 @@
 package xyz.ofortune.app.keycloak
 
+import jakarta.ws.rs.core.Response
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.message.BasicNameValuePair
-import org.jboss.logging.Logger;
+import org.jboss.logging.Logger
 import org.keycloak.Config
+import org.keycloak.authentication.AuthenticationFlowContext
+import org.keycloak.authentication.AuthenticationFlowError
 import org.keycloak.authentication.Authenticator
 import org.keycloak.authentication.AuthenticatorFactory
 import org.keycloak.authentication.authenticators.browser.UsernamePasswordForm
-import org.keycloak.authentication.ValidationContext
 import org.keycloak.connections.httpclient.HttpClientProvider
 import org.keycloak.events.Details
-import org.keycloak.events.Errors
 import org.keycloak.forms.login.LoginFormsProvider
 import org.keycloak.models.*
 import org.keycloak.models.utils.FormMessage
-import org.keycloak.models.credential.PasswordCredentialModel
-import org.keycloak.provider.ConfiguredProvider
 import org.keycloak.provider.ProviderConfigProperty
 import org.keycloak.services.ServicesLogger
 import org.keycloak.services.validation.Validation
 import org.keycloak.util.JsonSerialization
-import org.keycloak.authentication.AuthenticationFlowContext
-import org.keycloak.authentication.AuthenticationFlowError
-import org.keycloak.services.messages.Messages
 
 class LoginTurnstile : UsernamePasswordForm(), Authenticator, AuthenticatorFactory {
     companion object {
@@ -71,8 +67,22 @@ class LoginTurnstile : UsernamePasswordForm(), Authenticator, AuthenticatorFacto
         private var LOGGER: Logger = Logger.getLogger(LoginTurnstile::class.java)
     }
 
+    private var siteKey: String? = null
+    private var action: String? = null
+    private var lang: String? = null
+
+    protected override fun createLoginForm(form: LoginFormsProvider): Response {
+        form.setAttribute("captchaRequired", true)
+        form.setAttribute("captchaSiteKey", siteKey)
+        form.setAttribute("captchaAction", action)
+        form.setAttribute("captchaLanguage", lang)
+        form.addScript("https://challenges.cloudflare.com/turnstile/v0/api.js")
+
+        return super.createLoginForm(form)
+    }
+
     override public fun authenticate(context: AuthenticationFlowContext) {
-        var form = context.form();
+        val form = context.form()
 
         context.event.detail(Details.AUTH_METHOD, "auth_method")
 
@@ -86,9 +96,9 @@ class LoginTurnstile : UsernamePasswordForm(), Authenticator, AuthenticatorFacto
         }
 
         val captchaConfig = context.authenticatorConfig
-        val siteKey = captchaConfig.config[SITE_KEY]
-        val action = captchaConfig.config[ACTION] ?: DEFAULT_ACTION
-        val lang = context.session.context.resolveLocale(context.user).toLanguageTag()
+        siteKey = captchaConfig.config[SITE_KEY]
+        action = captchaConfig.config[ACTION] ?: DEFAULT_ACTION
+        lang = context.session.context.resolveLocale(context.user).toLanguageTag()
 
         form.setAttribute("captchaRequired", true)
         form.setAttribute("captchaSiteKey", siteKey)
