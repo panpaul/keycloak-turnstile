@@ -1,4 +1,4 @@
-package xyz.ofortune.app.keylocak
+package xyz.ofortune.app.keycloak
 
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.HttpPost
