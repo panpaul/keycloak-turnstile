@@ -32,6 +32,8 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
         const val CF_TURNSTILE_RESPONSE = "cf-turnstile-response"
         const val TURNSTILE_REFERENCE_CATEGORY = "turnstile"
 
+        const val TURNSTILE_DUMMY_TOKEN = "XXXX.DUMMY.TOKEN.XXXX" // https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+
         const val SITE_KEY = "site.key"
         const val SITE_SECRET = "secret"
         const val ACTION = "action"
@@ -92,7 +94,7 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
                 val content = response.entity.content
                 val json = JsonSerialization.readValue(content, Map::class.java)
                 LOGGER.tracef("Turnstile response: %s", json)
-                json["success"] == true && json["action"] == action
+                json["success"] == true && (captcha == TURNSTILE_DUMMY_TOKEN || json["action"] == action)
             }
         } catch (e: Exception) {
             // reusing recaptcha logger
