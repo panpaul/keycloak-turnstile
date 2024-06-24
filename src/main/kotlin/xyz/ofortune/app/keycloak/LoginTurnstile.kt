@@ -117,7 +117,7 @@ class LoginTurnstile : UsernamePasswordForm(), Authenticator, AuthenticatorFacto
 
         if (Validation.isBlank(captcha) || !validateTurnstile(context, captcha, context.authenticatorConfig.config)) {
             formData.remove(CF_TURNSTILE_RESPONSE)
-            context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge(context, MSG_CAPTCHA_FAILED))
+            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge(context, MSG_CAPTCHA_FAILED))
             return
         } else {
             super.action(context)
