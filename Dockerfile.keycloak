@@ -1,0 +1,21 @@
+ARG KEYCLOAK_VERSION=latest
+
+FROM alpine as keycloak-turnstile-build
+
+    RUN apk update && \
+        apk add maven;
+
+    WORKDIR /app
+    COPY . ./
+    RUN mvn -B package --file pom.xml
+    RUN mvn -B package --file theme/pom.xml
+    RUN mkdir -p ./providers
+    RUN mv target/keycloak-turnstile-*-jar-with-dependencies.jar ./providers/keycloak-turnstile.jar
+    RUN mv theme/target/turnstile-login-theme-*.jar ./providers/keycloak-turnstile-login-theme.jar
+
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+    COPY --from=keycloak-turnstile-build --chown=keycloak:keycloak --chmod=644 /app/providers/keycloak-turnstile.jar /opt/keycloak/providers/
+    COPY --from=keycloak-turnstile-build --chown=keycloak:keycloak --chmod=644 /app/providers/keycloak-turnstile-login-theme.jar /opt/keycloak/providers/
+
+    COPY --chown=keyclok:keycloak ./test/keycloak/turnstile.json /opt/keycloak/data/import/realm.json
+    RUN /opt/keycloak/bin/kc.sh import --file /opt/keycloak/data/import/realm.json

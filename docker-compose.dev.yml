@@ -1,0 +1,22 @@
+x-keycloak-env: &keycloak-env
+  KEYCLOAK_ADMIN: admin
+  KEYCLOAK_ADMIN_PASSWORD: D3v3l0pm3nt!
+
+services:
+  keycloak:
+    build:
+      context: .
+      dockerfile: Dockerfile.keycloak
+      args:
+        KEYCLOAK_VERSION: latest
+    environment:
+      <<: *keycloak-env
+      KC_HEALTH_ENABLED: true
+    command: start-dev
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
