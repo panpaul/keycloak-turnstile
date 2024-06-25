@@ -1,6 +1,5 @@
 package xyz.ofortune.app.keycloak
 
-import org.jboss.logging.Logger
 import org.keycloak.Config
 import org.keycloak.authentication.FormAction
 import org.keycloak.authentication.FormActionFactory
@@ -14,7 +13,6 @@ import org.keycloak.models.*
 import org.keycloak.models.utils.FormMessage
 import org.keycloak.provider.ConfiguredProvider
 import org.keycloak.provider.ProviderConfigProperty
-import org.keycloak.services.ServicesLogger
 import org.keycloak.services.validation.Validation
 
 class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider {
@@ -23,12 +21,10 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
         const val DEFAULT_ACTION = "register"
 
         private val REQUIREMENT_CHOICES =
-                arrayOf(
-                        AuthenticationExecutionModel.Requirement.REQUIRED,
-                        AuthenticationExecutionModel.Requirement.DISABLED
-                )
-
-        private var LOGGER: Logger = Logger.getLogger(RegistrationTurnstile::class.java)
+            arrayOf(
+                AuthenticationExecutionModel.Requirement.REQUIRED,
+                AuthenticationExecutionModel.Requirement.DISABLED
+            )
     }
 
     override fun create(session: KeycloakSession): FormAction {
@@ -49,7 +45,6 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
         }
 
         val lang = context.session.context.resolveLocale(context.user).toLanguageTag()
-
         Turnstile.prepareForm(form, config, lang)
     }
 
@@ -63,27 +58,21 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
         if (config == null) {
             context.error(Errors.INVALID_CONFIG)
             context.validationError(
-                    formData,
-                    listOf(FormMessage(null, Turnstile.MSG_CAPTCHA_NOT_CONFIGURED))
+                formData,
+                listOf(FormMessage(null, Turnstile.MSG_CAPTCHA_NOT_CONFIGURED))
             )
             context.excludeOtherErrors()
         } else if (Validation.isBlank(captcha) ||
-                        !Turnstile.validateTurnstile(
-                                context.session.getProvider(HttpClientProvider::class.java)
-                                        .httpClient,
-                                context.connection.remoteAddr,
-                                captcha,
-                                config,
-                                LOGGER,
-                                ServicesLogger.LOGGER
-                        )
+            !Turnstile.validate(
+                config,
+                captcha,
+                context.connection.remoteAddr,
+                context.session.getProvider(HttpClientProvider::class.java).httpClient
+            )
         ) {
             formData.remove(Turnstile.CF_TURNSTILE_RESPONSE)
             context.error(Errors.INVALID_REGISTRATION)
-            context.validationError(
-                    formData,
-                    listOf(FormMessage(null, Turnstile.MSG_CAPTCHA_FAILED))
-            )
+            context.validationError(formData, listOf(FormMessage(null, Turnstile.MSG_CAPTCHA_FAILED)))
             context.excludeOtherErrors()
         } else {
             context.success()
@@ -96,11 +85,7 @@ class RegistrationTurnstile : FormAction, FormActionFactory, ConfiguredProvider 
         return false
     }
 
-    override fun configuredFor(
-            session: KeycloakSession,
-            realm: RealmModel,
-            user: UserModel
-    ): Boolean {
+    override fun configuredFor(session: KeycloakSession, realm: RealmModel, user: UserModel): Boolean {
         return true
     }
 
