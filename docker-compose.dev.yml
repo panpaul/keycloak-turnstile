@@ -1,6 +1,6 @@
 x-keycloak-env: &keycloak-env
   KEYCLOAK_URL: http://keycloak:8080
-  KEYCLOAK_REALM: KEYCLOAK_REALM
+  KEYCLOAK_REALM: turnstile
   KEYCLOAK_ADMIN: admin
   KEYCLOAK_ADMIN_PASSWORD: D3v3l0pm3nt! # this is also baked into the admin user's password inside ./test/keycloak/turnstile.json
 
