@@ -1,6 +1,6 @@
 name: Build and Release
 
-on: [ push ]
+on: [push]
 
 permissions:
   contents: write
@@ -13,8 +13,8 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'liberica'
+          java-version: "17"
+          distribution: "liberica"
           cache: maven
       - name: Build Plugin
         run: mvn -B package --file pom.xml

@@ -1,0 +1,38 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [feature/testing]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 21
+      - name: Install dependencies
+        working-directory: ./test
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run keycloak
+        run: docker compose -f docker-compose.dev.yml up --build -d --wait keycloak
+      - name: Run Playwright tests
+        working-directory: ./test
+        run: npx playwright test
+      - name: Print keycloak output
+        run: docker logs keycloak
+        if: failure()
+      - name: teardown keycloak
+        run: docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
+        if: always()
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: ./test/playwright-report/
+          retention-days: 30
