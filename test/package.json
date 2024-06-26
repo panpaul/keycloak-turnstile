@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "set-browser-turnstile-config": "npx ts-node-esm ./scripts/setBrowserTurnstileConfig.ts"
+    "test": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,6 @@
     "@playwright/test": "^1.45.0",
     "@tsconfig/node21": "^21.0.3",
     "@types/node": "^20.14.8",
-    "ts-node": "^10.9.2"
+    "tsx": "^4.15.7"
   }
 }

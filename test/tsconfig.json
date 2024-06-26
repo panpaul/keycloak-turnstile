@@ -12,11 +12,5 @@
         "types": [
             "node"
         ]
-    },
-    "ts-node": {
-        "esm": true,
-        "experimentalSpecifierResolution":"node",
-        "transpileOnly": true,
-        "files": true
     }
 }
