@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, setBrowserAuthBinding } from '../keycloak';
+import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, getAuthedClient, setBrowserAuthBinding } from '../keycloak';
 
 test.describe('keycloak default browser login', async () => {
   test.beforeEach(async () => {
-    await setBrowserAuthBinding('browser');
+    await setBrowserAuthBinding(await getAuthedClient(), KEYCLOAK_REALM, 'browser');
   });
 
   test('can login to account client without turnstile widget', async ({ page }) => {

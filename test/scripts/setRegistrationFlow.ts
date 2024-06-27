@@ -1,4 +1,4 @@
-import { isTurnstileAuthenticatorConfig, setRegistrationAllowed, setRegistrationAuthBinding, setRegistrationFlowTurnstileConfig, type RegistrationAuthFlow, type TurnstileAuthenticatorConfig } from "../keycloak";
+import { KEYCLOAK_REALM, getAuthedClient, isTurnstileAuthenticatorConfigPreset, setRegistrationAllowed, setRegistrationAuthBinding, setRegistrationFlowTurnstileConfig, type RegistrationAuthFlow, type TurnstileAuthenticatorConfig } from "../keycloak";
 
 const registrationFlow: RegistrationAuthFlow = process.argv[2] as RegistrationAuthFlow ?? 'registration';
 const turnstileConfig: TurnstileAuthenticatorConfig = process.argv[3] as TurnstileAuthenticatorConfig ?? 'client-visible-pass-server-pass';
@@ -6,19 +6,19 @@ const turnstileConfig: TurnstileAuthenticatorConfig = process.argv[3] as Turnsti
 async function main() {
     switch (registrationFlow) {
         case 'registration': {
-            await setRegistrationAllowed(true);
-            await setRegistrationAuthBinding(registrationFlow);
+            await setRegistrationAllowed(await getAuthedClient(), KEYCLOAK_REALM, true);
+            await setRegistrationAuthBinding(await getAuthedClient(), KEYCLOAK_REALM, registrationFlow);
             return;
         }
         case 'registration-turnstile': {
-            await setRegistrationAllowed(true);
-            if (!isTurnstileAuthenticatorConfig(turnstileConfig)) {
+            await setRegistrationAllowed(await getAuthedClient(), KEYCLOAK_REALM, true);
+            if (!isTurnstileAuthenticatorConfigPreset(turnstileConfig)) {
                 throw new Error(`Invalid turnstile config ${turnstileConfig}`);
             }
             await Promise.all(
                 [
-                    setRegistrationAuthBinding(registrationFlow),
-                    setRegistrationFlowTurnstileConfig(turnstileConfig)
+                    setRegistrationAuthBinding(await getAuthedClient(), KEYCLOAK_REALM, registrationFlow),
+                    setRegistrationFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, turnstileConfig)
                 ]
             )
             return;

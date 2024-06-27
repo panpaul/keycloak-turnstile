@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, setBrowserAuthBinding, setBrowserFlowTurnstileConfig } from '../keycloak';
+import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, getAuthedClient, setBrowserAuthBinding, setBrowserFlowTurnstileConfig } from '../keycloak';
 
 test.describe('keycloak turnstile browser login', async () => {
 
     test.beforeEach(async () => {
-        await setBrowserAuthBinding('browser-turnstile');
+        await setBrowserAuthBinding(await getAuthedClient(), KEYCLOAK_REALM, 'browser-turnstile');
     });
 
     test.describe('client pass, server pass', () => {
         test.beforeEach(async () => {
-            await setBrowserFlowTurnstileConfig('client-visible-pass-server-pass');
+            await setBrowserFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, 'client-visible-pass-server-pass');
         });
 
         test('can login to account client with turnstile widget', async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe('keycloak turnstile browser login', async () => {
 
     test.describe('client pass, server fail', () => {
         test.beforeEach(async () => {
-            await setBrowserFlowTurnstileConfig('client-visible-pass-server-fail');
+            await setBrowserFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, 'client-visible-pass-server-fail');
         });
 
         test('cannot login to account client with turnstile widget when server-side validation fails', async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe('keycloak turnstile browser login', async () => {
 
     test.describe('client block', () => {
         test.beforeEach(async () => {
-            await setBrowserFlowTurnstileConfig('client-visible-block-server-pass');
+            await setBrowserFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, 'client-visible-block-server-pass');
         });
 
         test('cannot login to account client with turnstile widget when turnstile client fails', async ({ page }) => {

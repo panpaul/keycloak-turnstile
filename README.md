@@ -82,7 +82,7 @@ Run the preconfigured keycloak container (from the repository root):
 docker compose -f ./docker-compose.dev.yml up -d --build --wait keycloak
 ```
 
-When this completes, you should be able to access keycloak via http://localhost:8080/admin/turnstile/console.
+When this completes, you should be able to access keycloak via http://localhost:8080/admin/turnstile/console (see above for credentials).
 
 Then, to run the tests (from the test directory):
 ```

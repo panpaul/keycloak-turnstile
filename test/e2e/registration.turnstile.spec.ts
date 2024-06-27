@@ -1,17 +1,17 @@
 import { test, expect } from '@playwright/test';
-import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, setRegistrationAllowed, setRegistrationAuthBinding, setRegistrationFlowTurnstileConfig } from '../keycloak';
+import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, getAuthedClient, setRegistrationAllowed, setRegistrationAuthBinding, setRegistrationFlowTurnstileConfig } from '../keycloak';
 import { randomUUID } from 'crypto';
 
 test.describe('keycloak turnstile registration', async () => {
 
     test.beforeEach(async () => {
-        await setRegistrationAllowed(true);
-        await setRegistrationAuthBinding('registration-turnstile');
+        await setRegistrationAllowed(await getAuthedClient(), KEYCLOAK_REALM, true);
+        await setRegistrationAuthBinding(await getAuthedClient(), KEYCLOAK_REALM, 'registration-turnstile');
     });
 
     test.describe('client pass, server pass', () => {
         test.beforeEach(async () => {
-            await setRegistrationFlowTurnstileConfig('client-visible-pass-server-pass');
+            await setRegistrationFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, 'client-visible-pass-server-pass');
         });
 
         test('can register with turnstile widget', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('keycloak turnstile registration', async () => {
 
     test.describe('client pass, server fail', () => {
         test.beforeEach(async () => {
-            await setRegistrationFlowTurnstileConfig('client-visible-pass-server-fail');
+            await setRegistrationFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, 'client-visible-pass-server-fail');
         });
 
         test('cannot register with turnstile widget when server-side validation fails', async ({ page }) => {
@@ -92,7 +92,7 @@ test.describe('keycloak turnstile registration', async () => {
     test.describe('client block', () => {
 
         test.beforeEach(async () => {
-            await setRegistrationFlowTurnstileConfig('client-visible-block-server-pass');
+            await setRegistrationFlowTurnstileConfig(await getAuthedClient(), KEYCLOAK_REALM, 'client-visible-block-server-pass');
         });
 
         test('cannot register with turnstile widget when turnstile client fails', async ({ page }) => {

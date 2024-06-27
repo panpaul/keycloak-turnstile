@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_REALM, KEYCLOAK_URL, setBrowserAuthBinding, setRegistrationAllowed, setRegistrationAuthBinding } from '../keycloak';
+import { KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_REALM, KEYCLOAK_URL, getAuthedClient, setRegistrationAllowed, setRegistrationAuthBinding } from '../keycloak';
 import { randomUUID } from 'crypto';
 
 test.describe('keycloak default registration', async () => {
     test.beforeEach(async () => {
-        await setRegistrationAllowed(true);
-        await setRegistrationAuthBinding('registration');
+        await setRegistrationAllowed(await getAuthedClient(), KEYCLOAK_REALM, true);
+        await setRegistrationAuthBinding(await getAuthedClient(), KEYCLOAK_REALM, 'registration');
     });
 
     test('can register without turnstile widget', async ({ page }) => {
