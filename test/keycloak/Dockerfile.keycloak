@@ -17,5 +17,5 @@ FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     COPY --from=keycloak-turnstile-build --chown=keycloak:keycloak --chmod=644 /app/providers/keycloak-turnstile.jar /opt/keycloak/providers/
     COPY --from=keycloak-turnstile-build --chown=keycloak:keycloak --chmod=644 /app/providers/keycloak-turnstile-login-theme.jar /opt/keycloak/providers/
 
-    COPY --chown=keyclok:keycloak ./test/keycloak/turnstile.json /opt/keycloak/data/import/realm.json
+    COPY --chown=keycloak:keycloak ./test/keycloak/turnstile.json /opt/keycloak/data/import/realm.json
     RUN /opt/keycloak/bin/kc.sh import --file /opt/keycloak/data/import/realm.json
