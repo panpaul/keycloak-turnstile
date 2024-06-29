@@ -1,0 +1,44 @@
+x-keycloak-env: &keycloak-env
+  KEYCLOAK_URL: http://keycloak:8080
+  KEYCLOAK_REALM: turnstile
+  KEYCLOAK_ADMIN: admin
+  KEYCLOAK_ADMIN_PASSWORD: D3v3l0pm3nt! # this is also baked into the admin user's password inside ./test/keycloak/turnstile.json
+
+services:
+  keycloak:
+    build:
+      context: .
+      dockerfile: ./test/keycloak/Dockerfile.keycloak
+      args:
+        KEYCLOAK_VERSION: latest
+    environment:
+      <<: *keycloak-env
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_LOGLEVEL: DEBUG
+    command: start-dev --health-enabled=true
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  playwright:
+    build:
+      context: .
+      dockerfile: ./test/playwright/Dockerfile
+      args:
+        PLAYWRIGHT_VERSION: v1.45.0-noble
+    environment:
+      <<: *keycloak-env
+      CI: true
+    ipc: host
+    init: true
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./test:/app
+    command: ["npx", "playwright", "test"]
