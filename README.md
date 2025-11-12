@@ -1,5 +1,9 @@
 # keycloak-turnstile
 
+This project is **no longer actively maintained**. If you're interested in it, check out the [fork](https://github.com/systemofapwne/keycloak-turnstile)
+
+---
+
 This Keycloak plugin enables [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) support.
 
 The code is derived from the [vanilla implementation](https://github.com/keycloak/keycloak/blob/main/services/src/main/java/org/keycloak/authentication/forms/RegistrationRecaptcha.java) of reCAPTCHA in Keycloak.
@@ -29,7 +33,7 @@ mvn clean compile package
 ```
 
 ### Theme
- 
+
 If you want to use the default theme, you could just download `turnstile-login-theme-*.jar` and place it in the `providers` directory.
 
 Or you could check out the [theme](./theme) directory and modify it to your needs.
